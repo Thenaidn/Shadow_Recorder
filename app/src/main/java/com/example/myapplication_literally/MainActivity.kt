@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     private fun trimAndSaveAudio(minutes: Int) {
         stopAudioRecording()
 
-        val durationInSeconds = minutes * 6
+        val durationInSeconds = minutes * 60
         timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         val trimmedFilePath = "${externalCacheDir?.absolutePath}/trimmed_recording_$timeStamp.mp3"
 
