@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.os.Environment
 import android.view.SurfaceView
 import android.Manifest
+import android.os.Handler
+import android.os.Looper
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
@@ -17,6 +19,7 @@ import java.util.Date
 class MainActivity : AppCompatActivity() {
     private var mediaRecorder: MediaRecorder? = null
     private lateinit var audioSavePath: String
+    private val handler = Handler(Looper.getMainLooper())
     var timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
     var PERMISSIONS = arrayOf(
         Manifest.permission.RECORD_AUDIO,
@@ -49,7 +52,7 @@ class MainActivity : AppCompatActivity() {
     private fun trimAndSaveAudio(minutes: Int) {
         stopAudioRecording()
 
-        val durationInSeconds = minutes * 60
+        val durationInSeconds = minutes * 6
         timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
         val trimmedFilePath = "${externalCacheDir?.absolutePath}/trimmed_recording_$timeStamp.mp3"
 
@@ -57,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         val cmd = "-i \"$audioSavePath\" -t $durationInSeconds -acodec libmp3lame \"$trimmedFilePath\""
 
         if (FFmpeg.execute(cmd) == 0) {
+
             // 성공적으로 파일을 자른 후 녹음 시작
             audioSavePath = trimmedFilePath // 업데이트된 파일 경로를 저장
             startAudioRecording()
@@ -64,8 +68,11 @@ class MainActivity : AppCompatActivity() {
             // 오류 처리
             Toast.makeText(this, "오디오 파일 자르기에 실패했습니다.", Toast.LENGTH_SHORT).show()
         }
-    }
 
+    }
+    private fun deleteAudio(l: String){
+        File(l).delete()
+    }
 
     private fun requestAudioPermission() {
         requestPermissions(PERMISSIONS, 201)
@@ -83,7 +90,7 @@ class MainActivity : AppCompatActivity() {
             setOutputFile(recordingFilePath)
             prepare()
         }
-        println(recordingFilePath)
+        audioSavePath = recordingFilePath
         mediaRecorder?.start()
 
     }
@@ -92,7 +99,9 @@ class MainActivity : AppCompatActivity() {
         mediaRecorder?.stop()
         mediaRecorder?.release()
         mediaRecorder = null
+        handler.postDelayed({ deleteAudio(audioSavePath) }, 10000)
         audioSavePath = recordingFilePath
+
     }
 
 
