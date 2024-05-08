@@ -78,7 +78,8 @@ class MainActivity : AppCompatActivity() {
     private fun trimAndSaveAudio(minutes: Int) {
         stopAudioRecording()
 
-        val durationInSeconds = minutes * 3
+        val durationInSeconds = minutes * 60
+
         val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
         val trimmedFileName = "trimmed_recording_$timeStamp.mp3"
 
