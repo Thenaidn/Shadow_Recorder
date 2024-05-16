@@ -8,6 +8,7 @@ import android.view.SurfaceView
 import android.Manifest
 import android.content.ContentValues
 import android.content.pm.PackageManager
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -92,9 +93,29 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Get the total duration of the original audio file
+        val mediaMetadataRetriever = MediaMetadataRetriever()
+        mediaMetadataRetriever.setDataSource(originalFileTempPath)
+        val totalDurationInMillis = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
+        val totalDurationInSeconds = totalDurationInMillis / 1000
+
+        // Calculate the start time to trim the last n seconds
+        val startTime = totalDurationInSeconds - durationInSeconds
+
+        // Ensure startTime is non-negative
+        val effectiveStartTime = if (startTime < 0) 0 else startTime
+
         val trimmedFilePath = "${externalCacheDir?.absolutePath}/$trimmedFileName"
 
-        val cmd = arrayOf("-i", originalFileTempPath, "-t", "$durationInSeconds", "-acodec", "libmp3lame", trimmedFilePath)
+        // Modify the FFmpeg command to trim the last n seconds
+        val cmd = arrayOf(
+            "-i", originalFileTempPath,
+            "-ss", "$effectiveStartTime",
+            "-t", "$durationInSeconds",
+            "-acodec", "libmp3lame",
+            trimmedFilePath
+        )
+
         if (FFmpeg.execute(cmd) == 0) {
             val values = ContentValues().apply {
                 put(MediaStore.Audio.Media.DISPLAY_NAME, trimmedFileName)
@@ -118,8 +139,6 @@ class MainActivity : AppCompatActivity() {
                     values.clear()
                     values.put(MediaStore.Audio.Media.IS_PENDING, 0)
                     resolver.update(uri, values, null, null)
-
-
                 }
             } catch (e: Exception) {
                 uri?.let {
@@ -134,9 +153,9 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "오디오 파일 자르기에 실패했습니다.", Toast.LENGTH_SHORT).show()
         }
 
-        //originalFileTempFile.delete()
-
-        //File(trimmedFilePath).delete()
+        // Optionally delete temporary files
+        originalFileTempFile.delete()
+        File(trimmedFilePath).delete()
     }
 
 
